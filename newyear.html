@@ -61,6 +61,7 @@
     background:linear-gradient(90deg,#ffd700,#ff69b4,#44ccff);
     -webkit-background-clip:text;background-clip:text;color:transparent;
     text-shadow:0 0 20px rgba(255,215,0,0.4);
+    white-space:nowrap;
   }
   
   /* 响应式设计 */
@@ -69,9 +70,11 @@
     .title-container{
       top:100px;
       padding:8px 20px;
+      max-width:95vw;
     }
     .title{
-      font-size:32px;
+      font-size:28px;
+      white-space:nowrap;
     }
     
     /* 倒计时优化 */
@@ -99,8 +102,12 @@
   
   @media (max-width: 480px) {
     /* 小屏幕手机优化 */
+    .title-container{
+      max-width:98vw;
+    }
     .title{
-      font-size:24px;
+      font-size:22px;
+      white-space:nowrap;
     }
     .countdown{
       font-size:18px;
@@ -109,6 +116,14 @@
     .countdown .item{
       min-width:40px;
       padding:4px 6px;
+    }
+  }
+  
+  @media (max-width: 320px) {
+    /* 极小屏幕优化 */
+    .title{
+      font-size:18px;
+      white-space:nowrap;
     }
   }
 
