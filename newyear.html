@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026马年 · 新春烟花盛典</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:linear-gradient(135deg,#101030,#2a0f3b,#4a0c33);
+    overflow:hidden;height:100vh;
+    font-family:"Microsoft YaHei",sans-serif;
+    color:#fff;
+  }
+  canvas{position:absolute;top:0;left:0}
+
+  /* 倒计时 + 时钟图标 */
+  .countdown{
+    position:fixed;top:40px;left:50%;transform:translateX(-50%);
+    font-size:28px;color:#ffd700;
+    text-shadow:0 0 12px #ffd700;
+    z-index:998;
+    display:flex;align-items:center;gap:14px;
+    background:rgba(0,0,0,0.35);
+    padding:10px 24px;border-radius:60px;
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(255,215,0,0.4);
+  }
+  .clock{
+    width:38px;height:38px;
+    border:3px solid #ffd700;
+    border-radius:50%;
+    position:relative;display:flex;align-items:center;justify-content:center;
+  }
+  .clock::after{content:'';width:2px;height:12px;background:#ffd700;position:absolute;transform-origin:bottom center;animation:s 60s linear infinite}
+  .clock::before{content:'';width:2px;height:8px;background:#ff69b4;position:absolute;transform-origin:bottom center;transform:rotate(90deg)}
+  .clock .dot{width:5px;height:5px;background:#ffd700;border-radius:50%;z-index:2}
+  @keyframes s{to{transform:rotate(360deg)}}
+
+  .countdown .item{
+    min-width:60px;text-align:center;
+    background:rgba(0,0,0,0.4);
+    padding:8px 10px;border-radius:8px;
+  }
+
+  /* 标题容器 */
+  .title-container{
+    position:fixed;top:120px;left:50%;transform:translateX(-50%);
+    z-index:999;
+    padding:10px 24px;
+    border-radius:60px;
+    background:rgba(0,0,0,0.35);
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(255,215,0,0.4);
+  }
+  /* 标题文字 */
+  .title{
+    font-size:50px;font-weight:bold;
+    background:linear-gradient(90deg,#ffd700,#ff69b4,#44ccff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 20px rgba(255,215,0,0.4);
+  }
+
+  /* 弹幕 */
+  .danmu{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:997}
+  .dm{position:absolute;white-space:nowrap;font-size:22px;font-weight:bold;text-shadow:1px 1px 5px #000;animation:dr linear forwards}
+  @keyframes dr{from{transform:translateX(100vw)}to{transform:translateX(-120%)}}
+</style>
+</head>
+<body>
+
+<div class="title-container">
+  <div class="title">2026 马年大吉 · 万事胜意</div>
+</div>
+
+<div class="countdown">
+  <div class="clock"><div class="dot"></div></div>
+  <div class="item"><span id="d">0</span>天</div>
+  <div class="item"><span id="h">0</span>时</div>
+  <div class="item"><span id="m">0</span>分</div>
+  <div class="item"><span id="s">0</span>秒</div>
+</div>
+
+<div class="danmu" id="dm"></div>
+<canvas id="c"></canvas>
+
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+function resize(){c.width=innerWidth;c.height=innerHeight}
+resize();window.addEventListener('resize',resize);
+
+// 雪花
+class Snow{
+  constructor(){this.reset()}
+  reset(){
+    this.x=Math.random()*c.width;
+    this.y=Math.random()*-c.height;
+    this.s=Math.random()*2+1;
+    this.vy=Math.random()*1.5+0.5;
+    this.vx=(Math.random()-0.5)*0.6
+  }
+  update(){
+    this.x+=this.vx;
+    this.y+=this.vy;
+    if(this.y>c.height)this.reset()
+  }
+  draw(){
+    ctx.fillStyle='rgba(255,255,255,0.8)';
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.s,0,Math.PI*2);
+    ctx.fill()
+  }
+}
+const snows=Array.from({length:200},()=>new Snow());
+
+// 粒子类 - 修复透明度衰减速度
+class Particle{
+  constructor(x,y,color,size,speed,angle=0){
+    this.x = x;
+    this.y = y;
+    this.color = color;
+    this.size = size;
+    // 按角度计算速度，保证形状完整
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.alpha = 1;
+    this.gravity = 0.05; // 减小重力，避免形状快速变形
+  }
+  update(){
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy += this.gravity;
+    this.alpha -= 0.008; // 减慢衰减，让形状显示更久
+  }
+  draw(){
+    if(this.alpha > 0){
+      ctx.fillStyle=`rgba(${this.color},${this.alpha})`;
+      ctx.fillRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+    }
+  }
+}
+
+// 形状坐标优化 - 调整比例，确保显示完整
+const shapes={
+  // 马形
+  horse:[
+    [0,-8],[0,-6],[0,-4],[0,-2],[0,0],[0,2],[0,4],
+    [-2,-6],[-2,-4],[-4,-4],[-4,-2],[-6,-2],[-6,0],[-4,0],[-4,2],[-2,2],
+    [2,-6],[2,-4],[4,-4],[4,-2],[6,-2],[6,0],[4,0],[4,2],[2,2]
+  ],
+  // 心形
+  heart:[
+    [0,0],[3,-3],[6,-4],[8,-2],[6,1],[3,4],[0,7],[-3,4],[-6,1],[-8,-2],[-6,-4],[-3,-3]
+  ],
+  // 星形
+  star:[
+    [0,-10],[3,-3],[10,-3],[5,2],[7,8],[0,5],[-7,8],[-5,2],[-10,-3],[-3,-3]
+  ],
+  // 福字简化版
+  luck:[
+    [0,-6],[0,-4],[0,-2],[0,0],[0,2],[0,4],
+    [-3,-4],[-3,-2],[-3,0],[-3,2],
+    [3,-4],[3,-2],[3,0],[3,2]
+  ],
+  // 2026数字
+  year:[
+    // 2
+    [-10,-6],[-8,-6],[-10,-3],[-10,0],[-10,3],[-8,3],[-6,3],
+    // 0
+    [-4,-6],[-2,-6],[-2,-3],[-2,0],[-2,3],[-4,3],[-4,-3],
+    // 2
+    [0,-6],[2,-6],[0,-3],[0,0],[0,3],[2,3],[4,3],
+    // 6
+    [6,-6],[8,-6],[8,-3],[6,-3],[6,0],[8,0],[8,3],[6,3],[4,1]
+  ]
+};
+
+// 烟花类 - 修复形状爆开逻辑
+class Firework{
+  constructor(x){
+    this.x = x || Math.random()*c.width;
+    this.y = c.height;
+    this.targetY = 100 + Math.random()*300; // 绽放高度
+    this.speed = 4 + Math.random()*2; // 升空速度
+    this.exploded = false;
+    this.particles = [];
+    // 随机烟花类型
+    this.types = ['normal','horse','heart','star','luck','year'];
+    this.type = this.types[Math.floor(Math.random()*this.types.length)];
+    // 新年配色
+    this.colors = [
+      [255,215,0], // 金色
+      [255,80,80], // 红色
+      [255,105,180],// 粉色
+      [100,220,255],// 蓝色
+      [100,255,100] // 绿色
+    ];
+    this.color = this.colors[Math.floor(Math.random()*this.colors.length)].join(',');
+    // 升空尾焰
+    this.tail = [];
+  }
+
+  // 修复形状爆开方法
+  explode(){
+    this.exploded = true;
+    const baseSize = 3; // 粒子基础大小
+    const baseSpeed = 2; // 形状粒子速度
+
+    // 普通烟花
+    if(this.type === 'normal'){
+      for(let i=0;i<150;i++){
+        const angle = Math.random() * Math.PI * 2;
+        this.particles.push(new Particle(
+          this.x, 
+          this.y, 
+          this.color, 
+          baseSize + Math.random()*2, 
+          3 + Math.random()*5,
+          angle
+        ));
+      }
+    }
+    // 形状烟花
+    else{
+      const shapePoints = shapes[this.type];
+      // 遍历形状的每个点
+      for(let point of shapePoints){
+        // 每个点生成多个粒子，让形状更明显
+        for(let i=0;i<3;i++){
+          const angle = Math.atan2(point[1], point[0]);
+          // 计算粒子初始位置（基于形状坐标偏移）
+          const px = this.x + point[0] * 4;
+          const py = this.y + point[1] * 4;
+          this.particles.push(new Particle(
+            px, 
+            py, 
+            this.color, 
+            baseSize, 
+            baseSpeed + Math.random()*1,
+            angle
+          ));
+        }
+      }
+      // 形状外围补充普通粒子，更绚丽
+      for(let i=0;i<50;i++){
+        const angle = Math.random() * Math.PI * 2;
+        this.particles.push(new Particle(
+          this.x, 
+          this.y, 
+          this.color, 
+          baseSize, 
+          4 + Math.random()*2,
+          angle
+        ));
+      }
+    }
+  }
+
+  update(){
+    // 升空阶段
+    if(!this.exploded){
+      this.y -= this.speed;
+      // 生成尾焰
+      this.tail.push({x:this.x, y:this.y, alpha:1});
+      this.tail = this.tail.filter(t => t.alpha > 0);
+      this.tail.forEach(t => t.alpha -= 0.1);
+      // 到达高度触发爆炸
+      if(this.y <= this.targetY){
+        this.explode();
+      }
+    }
+    // 爆炸阶段更新粒子
+    this.particles.forEach(p => p.update());
+    // 清理消失的粒子
+    this.particles = this.particles.filter(p => p.alpha > 0);
+  }
+
+  draw(){
+    // 绘制升空烟花芯
+    if(!this.exploded){
+      // 发光效果
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = `rgba(${this.color},0.8)`;
+      ctx.fillStyle = `rgba(${this.color},1)`;
+      ctx.fillRect(this.x-2, this.y, 4, 10);
+      ctx.shadowBlur = 0;
+      // 绘制尾焰
+      this.tail.forEach(t => {
+        ctx.fillStyle = `rgba(${this.color},${t.alpha})`;
+        ctx.fillRect(t.x-1, t.y+10, 2, 6);
+      });
+    }
+    // 绘制粒子
+    this.particles.forEach(p => p.draw());
+  }
+}
+
+// 烟花管理
+let fireworks=[];
+
+// 自动生成烟花（每1.5秒一个）
+setInterval(()=>{
+  fireworks.push(new Firework());
+},1500);
+
+// 点击生成烟花
+c.addEventListener('click',e=>{
+  fireworks.push(new Firework(e.clientX));
+  fireworks.push(new Firework(e.clientX + Math.random()*60-30));
+});
+
+// 倒计时（2026马年春节：2026-02-17）
+function cd(){
+  const target = new Date('2026-02-17 00:00:00');
+  const now = new Date();
+  let diff = Math.max(0, target - now);
+  
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000).toString().padStart(2,'0');
+  const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2,'0');
+  const s = Math.floor((diff % 60000) / 1000).toString().padStart(2,'0');
+  
+  document.getElementById('d').innerText = d;
+  document.getElementById('h').innerText = h;
+  document.getElementById('m').innerText = m;
+  document.getElementById('s').innerText = s;
+}
+cd();
+setInterval(cd,1000);
+
+// 弹幕祝福语（40+条）
+const texts=[
+  '2026马年大吉','马到成功','龙马精神','一马当先','马上有钱','马上暴富',
+  '阖家幸福','万事如意','身体健康','财源广进','步步高升','前程似锦',
+  '心想事成','岁岁平安','福星高照','好运连连','笑口常开','万事胜意',
+  '新春快乐','马年行大运','日子红红火火','暴富暴美暴顺利','平安喜乐',
+  '事业腾飞','喜气洋洋','钱途无量','顺风顺水','福气满满','好运爆棚',
+  '八方来财','五福临门','六六大顺','七星高照','九九同心','十全十美',
+  '马年旺不停','新年新气象','万事皆如意','幸福永相伴','开心每一天',
+  '策马奔腾迎新春','一马平川走四方','金马送福到家门','龙马精神展宏图'
+];
+const colors=['#ffd700','#ff69b4','#44ddff','#ffffff','#33ff66','#ffaa33'];
+
+// 生成弹幕
+function dm(){
+  const div=document.createElement('div');
+  div.className='dm';
+  div.innerText=texts[Math.floor(Math.random()*texts.length)];
+  div.style.color=colors[Math.floor(Math.random()*colors.length)];
+  div.style.top=Math.random()*75+'vh';
+  div.style.animationDuration=(10+Math.random()*8)+'s';
+  document.getElementById('dm').appendChild(div);
+  setTimeout(()=>div.remove(),20000);
+}
+setInterval(dm,500);
+dm();
+
+// 主渲染循环
+function loop(){
+  // 半透明背景，保留拖影效果
+  ctx.fillStyle='rgba(20,20,40,0.2)';
+  ctx.fillRect(0,0,c.width,c.height);
+  
+  // 渲染雪花
+  snows.forEach(s=>{s.update();s.draw()});
+  
+  // 渲染烟花
+  fireworks.forEach(f=>{f.update();f.draw()});
+  
+  // 清理已消失的烟花
+  fireworks=fireworks.filter(f=>f.particles.length>0 || !f.exploded);
+  
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
