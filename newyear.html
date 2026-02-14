@@ -198,7 +198,234 @@
 <div class="danmu" id="dm"></div>
 <canvas id="c"></canvas>
 
+<!-- 音频系统 -->
+
+
+<!-- 背景音乐 -->
+<audio id="bg-music" loop preload="auto" style="display:none;">
+  <source src="https://www.bensound.com/bensound-music/bensound-sunny.mp3" type="audio/mpeg">
+  <source src="https://www.bensound.com/bensound-music/bensound-ukulele.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+<!-- 音频控制 -->
+<div id="audio-controls" style="position:fixed;top:20px;right:20px;z-index:1000;">
+  <button onclick="toggleAudio()" style="background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+    <span id="audio-icon">🔇</span>
+  </button>
+</div>
+
+<!-- 音频启用提示 -->
+<div id="audio-prompt" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:white;padding:20px;border-radius:10px;z-index:1001;text-align:center;">
+  <h3>🎊 新年祝福页面 🎊</h3>
+  <p>点击下方按钮启用声音效果</p>
+  <button onclick="enableAudioSystem()" style="margin-top:15px;padding:10px 20px;background:#ffd700;color:#000;border:none;border-radius:5px;cursor:pointer;font-weight:bold;">启用声音</button>
+</div>
+
 <script>
+// 音频系统控制 - 使用Web Audio API
+let audioEnabled = false;
+let audioContext = null;
+let bgMusicPlaying = false;
+let bgMusicInterval = null;
+
+// 启用音频系统
+function enableAudioSystem() {
+  try {
+    // 创建音频上下文
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    audioEnabled = true;
+    
+    // 隐藏提示
+    document.getElementById('audio-prompt').style.display = 'none';
+    
+    // 开始播放背景音乐
+    startBackgroundMusic();
+    
+    // 更新图标
+    document.getElementById('audio-icon').textContent = '🔊';
+    
+    console.log('Audio system enabled');
+  } catch (e) {
+    console.error('Failed to enable audio:', e);
+    alert('无法启用音频系统，请检查浏览器设置');
+  }
+}
+
+// 切换音频状态
+function toggleAudio() {
+  if (!audioEnabled) {
+    enableAudioSystem();
+    return;
+  }
+  
+  const icon = document.getElementById('audio-icon');
+  
+  if (bgMusicPlaying) {
+    // 完全关闭音频系统
+    stopBackgroundMusic();
+    audioEnabled = false;
+    icon.textContent = '🔇';
+  } else {
+    // 重新启用音频系统
+    audioEnabled = true;
+    startBackgroundMusic();
+    icon.textContent = '🔊';
+  }
+}
+
+// 播放背景音乐（使用真实音频文件）
+function startBackgroundMusic() {
+  if (bgMusicPlaying) return;
+  
+  try {
+    const bgMusic = document.getElementById('bg-music');
+    if (bgMusic) {
+      bgMusic.volume = 0.3;
+      bgMusic.play().catch(e => {
+        console.log('BG music play failed:', e);
+        // 如果自动播放失败，等待用户交互
+        document.body.addEventListener('click', function playOnClick() {
+          bgMusic.play().catch(e => console.log('Play on click failed:', e));
+          document.body.removeEventListener('click', playOnClick);
+        }, { once: true });
+      });
+      bgMusicPlaying = true;
+    }
+  } catch (e) {
+    console.error('Failed to start background music:', e);
+  }
+}
+
+// 停止背景音乐
+function stopBackgroundMusic() {
+  try {
+    const bgMusic = document.getElementById('bg-music');
+    if (bgMusic) {
+      bgMusic.pause();
+      bgMusic.currentTime = 0;
+    }
+    bgMusicPlaying = false;
+  } catch (e) {
+    console.error('Failed to stop background music:', e);
+  }
+}
+
+// 播放烟花爆炸声音（使用Web Audio API生成）
+function playFireworkSound() {
+  if (!audioEnabled || !audioContext) return;
+  
+  try {
+    const now = audioContext.currentTime;
+    
+    // 主爆炸声音 - 更真实的烟花爆炸
+    const explosion = audioContext.createOscillator();
+    const explosionGain = audioContext.createGain();
+    
+    explosion.connect(explosionGain);
+    explosionGain.connect(audioContext.destination);
+    
+    explosion.type = 'sawtooth';
+    explosion.frequency.setValueAtTime(300 + Math.random() * 100, now);
+    explosion.frequency.exponentialRampToValueAtTime(50, now + 0.8);
+    
+    explosionGain.gain.setValueAtTime(0.4, now);
+    explosionGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+    
+    explosion.start(now);
+    explosion.stop(now + 0.8);
+    
+    // 添加爆炸后的火花声
+    setTimeout(() => {
+      if (!audioEnabled || !audioContext) return;
+      
+      const sparkTime = now + 0.1;
+      const sparkCount = 5 + Math.floor(Math.random() * 8);
+      
+      for (let i = 0; i < sparkCount; i++) {
+        const sparkDelay = 0.05 + Math.random() * 0.3;
+        
+        setTimeout(() => {
+          if (!audioEnabled || !audioContext) return;
+          
+          const spark = audioContext.createOscillator();
+          const sparkGain = audioContext.createGain();
+          
+          spark.connect(sparkGain);
+          sparkGain.connect(audioContext.destination);
+          
+          spark.type = 'square';
+          spark.frequency.setValueAtTime(800 + Math.random() * 400, audioContext.currentTime);
+          spark.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.2);
+          
+          sparkGain.gain.setValueAtTime(0.1 + Math.random() * 0.1, audioContext.currentTime);
+          sparkGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+          
+          spark.start(audioContext.currentTime);
+          spark.stop(audioContext.currentTime + 0.2);
+        }, sparkDelay * 1000);
+      }
+    }, 100);
+    
+    // 添加爆炸前的上升声音（可选）
+    if (Math.random() > 0.7) {
+      const rise = audioContext.createOscillator();
+      const riseGain = audioContext.createGain();
+      
+      rise.connect(riseGain);
+      riseGain.connect(audioContext.destination);
+      
+      rise.type = 'sine';
+      rise.frequency.setValueAtTime(200, now - 0.3);
+      rise.frequency.linearRampToValueAtTime(600, now);
+      
+      riseGain.gain.setValueAtTime(0.1, now - 0.3);
+      riseGain.gain.linearRampToValueAtTime(0.2, now);
+      riseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      
+      rise.start(now - 0.3);
+      rise.stop(now + 0.1);
+    }
+    
+  } catch (e) {
+    console.error('Failed to play firework sound:', e);
+  }
+}
+
+// 播放单个音符
+function playTone(frequency, duration) {
+  if (!audioContext) return;
+  
+  try {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration / 1000);
+  } catch (e) {
+    console.error('Failed to play tone:', e);
+  }
+}
+
+// 页面加载时设置点击事件
+document.addEventListener('DOMContentLoaded', function() {
+  // 点击页面任意位置启用音频
+  document.body.addEventListener('click', function enableOnClick(e) {
+    // 避免点击音频控制按钮时触发
+    if (!e.target.closest('#audio-controls')) {
+      enableAudioSystem();
+    }
+    document.body.removeEventListener('click', enableOnClick);
+  }, { once: true });
+});
+
 const c = document.getElementById('c');
 const ctx = c.getContext('2d');
 function resize(){c.width=innerWidth;c.height=innerHeight}
@@ -316,10 +543,13 @@ class Firework{
   }
 
   // 修复形状爆开方法
-  explode(){
+  explode(){    
     this.exploded = true;
     const baseSize = 3; // 粒子基础大小
     const baseSpeed = 2; // 形状粒子速度
+
+    // 播放烟花爆炸声音
+    playFireworkSound();
 
     // 普通烟花
     if(this.type === 'normal'){
