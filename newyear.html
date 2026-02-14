@@ -68,7 +68,7 @@
   @media (max-width: 768px) {
     /* 手机屏幕优化 */
     .title-container{
-      top:100px;
+      top:120px;
       padding:8px 20px;
       max-width:95vw;
     }
@@ -79,43 +79,63 @@
     
     /* 倒计时优化 */
     .countdown{
-      top:30px;
-      font-size:20px;
-      gap:8px;
-      padding:8px 16px;
+      top:40px;
+      font-size:16px;
+      gap:6px;
+      padding:6px 12px;
+      max-width:95vw;
+      white-space:nowrap;
     }
     .countdown .item{
-      min-width:45px;
-      padding:6px 8px;
+      min-width:35px;
+      padding:4px 6px;
+      font-size:14px;
     }
     .clock{
-      width:30px;
-      height:30px;
+      width:25px;
+      height:25px;
     }
     .clock::after{
-      height:10px;
+      height:8px;
     }
     .clock::before{
-      height:6px;
+      height:5px;
     }
   }
   
   @media (max-width: 480px) {
     /* 小屏幕手机优化 */
     .title-container{
+      top:110px;
       max-width:98vw;
     }
     .title{
       font-size:22px;
       white-space:nowrap;
     }
+    
     .countdown{
-      font-size:18px;
-      gap:6px;
+      top:35px;
+      font-size:14px;
+      gap:4px;
+      padding:5px 10px;
+      max-width:98vw;
+      white-space:nowrap;
     }
     .countdown .item{
-      min-width:40px;
-      padding:4px 6px;
+      min-width:30px;
+      padding:3px 5px;
+      font-size:12px;
+    }
+    .clock{
+      width:20px;
+      height:20px;
+    }
+    .clock::after{
+      height:6px;
+    }
+    .clock::before{
+      height:4px;
     }
   }
   
@@ -124,6 +144,17 @@
     .title{
       font-size:18px;
       white-space:nowrap;
+    }
+    
+    .countdown{
+      font-size:12px;
+      gap:3px;
+      padding:4px 8px;
+    }
+    .countdown .item{
+      min-width:25px;
+      padding:2px 4px;
+      font-size:10px;
     }
   }
 
