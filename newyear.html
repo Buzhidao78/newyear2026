@@ -673,7 +673,7 @@ function cd(){
 cd();
 setInterval(cd,1000);
 
-// 弹幕祝福语（40+条）
+// 弹幕祝福语（80+条）
 const texts=[
   '2026马年大吉','马到成功','龙马精神','一马当先','马上有钱','马上暴富',
   '阖家幸福','万事如意','身体健康','财源广进','步步高升','前程似锦',
@@ -682,7 +682,8 @@ const texts=[
   '事业腾飞','喜气洋洋','钱途无量','顺风顺水','福气满满','好运爆棚',
   '八方来财','五福临门','六六大顺','七星高照','九九同心','十全十美',
   '马年旺不停','新年新气象','万事皆如意','幸福永相伴','开心每一天',
-  '策马奔腾迎新春','一马平川走四方','金马送福到家门','龙马精神展宏图'
+  '策马奔腾迎新春','一马平川走四方','金马送福到家门','龙马精神展宏图',
+  
   // 新增诗词祝福
   '春风得意马蹄疾','一日看尽长安花','马踏飞燕迎新春','金马玉堂贺新年',
   '马年吉祥福满门','骏马奔腾好运来','马到功成事事顺','龙马精神永相随',
@@ -699,20 +700,26 @@ const texts=[
   '金马送福，喜气洋洋','马年行大运，财源广进','龙马精神，永葆青春',
   '马到成功，事业腾飞','马上有钱，财源滚滚','马年吉祥，幸福安康'
 ];
+
 const colors=['#ffd700','#ff69b4','#44ddff','#ffffff','#33ff66','#ffaa33'];
 
 // 生成弹幕
 function dm(){
   const div=document.createElement('div');
   div.className='dm';
-  div.innerText=texts[Math.floor(Math.random()*texts.length)];
-  div.style.color=colors[Math.floor(Math.random()*colors.length)];
-  div.style.top=Math.random()*75+'vh';
-  div.style.animationDuration=(10+Math.random()*8)+'s';
+  
+  // 显示普通祝福语
+  div.innerText = texts[Math.floor(Math.random()*texts.length)];
+  div.style.color = colors[Math.floor(Math.random()*colors.length)];
+  div.style.fontSize = '22px';
+  
+  div.style.top = Math.random()*75 + 'vh';
+  div.style.animationDuration = (10 + Math.random()*8) + 's';
+  
   document.getElementById('dm').appendChild(div);
-  setTimeout(()=>div.remove(),20000);
+  setTimeout(() => div.remove(), 20000);
 }
-setInterval(dm,500);
+setInterval(dm, 500);
 dm();
 
 // 主渲染循环
@@ -736,4 +743,3 @@ loop();
 </script>
 </body>
 </html>
-
